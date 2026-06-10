@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Atendimentos — Inspira Legal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+:root {
+  --cornflower: #6A97EB;
+  --rich-black: #070C21;
+  --link-water: #DEE7FB;
+  --keppel:     #208A9D;
+  --indigo:     #9970FF;
+  --deep-blue:  #2C3BA1;
+  --bg:         #EEF2FC;
+  --surface:    #FFFFFF;
+  --text-main:  #070C21;
+  --text-muted: #6B7A99;
+  --border:     #D6E0F5;
+  color-scheme: light;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; background: var(--bg); color: var(--text-main); min-height: 100vh; font-size: 13px; }
+
+header { background: var(--rich-black); color: #fff; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.header-brand { display: flex; align-items: center; gap: 12px; }
+.isotipo { width: 32px; height: 32px; flex-shrink: 0; }
+.header-text h1 { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+.header-text .sub { font-size: 11px; color: var(--cornflower); opacity: 0.85; margin-top: 2px; font-weight: 500; }
+.btn-reload { background: rgba(106,151,235,0.15); border: 1px solid rgba(106,151,235,0.35); color: var(--cornflower); padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit; white-space: nowrap; }
+.btn-reload:hover { background: rgba(106,151,235,0.28); }
+
+.week-nav { background: var(--surface); border-bottom: 2px solid var(--link-water); padding: 10px 24px; display: flex; align-items: center; gap: 14px; }
+.week-nav button { background: var(--cornflower); color: white; border: none; border-radius: 8px; padding: 6px 16px; cursor: pointer; font-size: 12px; font-weight: 700; font-family: inherit; }
+.week-nav button:hover { background: var(--deep-blue); }
+.week-nav button:disabled { background: #C9D3E8; cursor: default; opacity: 0.7; }
+.week-label { font-size: 13px; font-weight: 700; color: var(--rich-black); flex: 1; text-align: center; letter-spacing: -0.01em; }
+
+.tab-nav { background: var(--surface); border-bottom: 2px solid var(--link-water); padding: 0 24px; display: flex; gap: 4px; }
+.tab-btn { background: none; border: none; border-bottom: 3px solid transparent; margin-bottom: -2px; padding: 11px 18px; font-size: 12px; font-weight: 700; font-family: inherit; color: var(--text-muted); cursor: pointer; transition: color 0.15s; white-space: nowrap; }
+.tab-btn:hover { color: var(--rich-black); }
+.tab-btn.active { color: var(--cornflower); border-bottom-color: var(--cornflower); }
+
+.content { padding: 18px 24px; }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+.summary-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 16px; margin-bottom: 14px; font-size: 12px; font-weight: 600; }
+.summary-bar .sb-label { color: var(--text-muted); font-weight: 500; margin-right: 4px; }
+.summary-bar .divider { color: var(--border); }
+.vol-up   { color: #C0392B; }
+.vol-down { color: var(--keppel); }
+.vol-same { color: var(--text-muted); }
+.prev-ref { color: var(--text-muted); font-size: 11px; font-weight: 500; margin-left: auto; }
+
+.cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+.card { background: var(--surface); border-radius: 12px; padding: 16px 18px; box-shadow: 0 1px 3px rgba(7,12,33,0.07); border: 1px solid var(--border); position: relative; overflow: hidden; }
+.card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--cornflower); border-radius: 12px 12px 0 0; }
+.card-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; margin-bottom: 8px; }
+.card-value { font-size: 32px; font-weight: 800; color: var(--rich-black); letter-spacing: -0.03em; line-height: 1; }
+.card-value.accent { color: var(--cornflower); }
+.card-value.green  { color: var(--keppel); }
+.card-value.indigo { color: var(--indigo); }
+.card-sub { font-size: 11px; color: var(--text-muted); margin-top: 6px; font-weight: 500; }
+
+.two-col { display: grid; grid-template-columns: 3fr 2fr; gap: 14px; margin-bottom: 14px; }
+.panel { background: var(--surface); border-radius: 12px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(7,12,33,0.07); border: 1px solid var(--border); }
+.panel h2 { font-size: 11px; font-weight: 700; color: var(--rich-black); margin-bottom: 14px; padding-bottom: 10px; border-bottom: 2px solid var(--link-water); display: flex; align-items: center; gap: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+.panel-subtitle { font-size: 10px; color: var(--text-muted); font-weight: 500; margin-left: auto; text-transform: none; letter-spacing: 0; }
+
+.tickets-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tickets-table th { background: var(--rich-black); color: rgba(255,255,255,0.9); padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+.tickets-table th:first-child { border-radius: 8px 0 0 0; }
+.tickets-table th:last-child  { border-radius: 0 8px 0 0; }
+.tickets-table td { padding: 8px 10px; border-bottom: 1px solid var(--link-water); vertical-align: middle; }
+.tickets-table tbody tr:last-child td { border-bottom: none; }
+.tickets-table tbody tr:hover td { background: #F4F7FE; }
+
+.rank-num { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: var(--cornflower); color: #fff; border-radius: 50%; font-size: 10px; font-weight: 800; }
+.rank-num.top3 { background: var(--rich-black); }
+.freq-pill { display: inline-block; background: var(--link-water); color: var(--rich-black); font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; }
+
+.ticket-combo { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.chip-what  { display:inline-block; background:#E0ECFF; color:var(--deep-blue); font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; }
+.chip-why   { display:inline-block; background:#EDE8FF; color:#5B21B6; font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; }
+.chip-aluno { display:inline-block; background:#FFF5D6; color:#92400E; font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; }
+.chip-gestao{ display:inline-block; background:var(--link-water); color:var(--rich-black); font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; }
+.chip-solo  { display:inline-block; background:#F0F0F4; color:var(--text-main); font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; }
+
+.trend-up   { color: #C0392B; font-weight: 700; font-size: 11px; white-space: nowrap; }
+.trend-down { color: var(--keppel); font-weight: 700; font-size: 11px; white-space: nowrap; }
+.trend-same { color: var(--text-muted); font-size: 11px; }
+.trend-new  { background: #FFF5D6; color: #9A6C00; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+
+.insight-box { background: linear-gradient(135deg, #F0F5FF 0%, #EBF0FD 100%); border-left: 4px solid var(--cornflower); padding: 14px 18px; border-radius: 0 10px 10px 0; font-size: 12.5px; line-height: 1.75; color: var(--rich-black); margin-bottom: 14px; font-weight: 500; }
+.insight-box strong { color: var(--cornflower); }
+
+.chart-wrap { position: relative; height: 240px; }
+
+.loading { display: flex; flex-direction: column; align-items: center; gap: 14px; color: var(--text-muted); padding: 60px; justify-content: center; font-size: 13px; font-weight: 500; }
+.spinner { width: 28px; height: 28px; border: 3px solid var(--link-water); border-top-color: var(--cornflower); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.error-box { background: var(--surface); border-left: 4px solid #C0392B; padding: 16px 20px; border-radius: 0 10px 10px 0; color: #C0392B; font-size: 13px; margin: 20px 0; font-weight: 500; }
+.no-data { text-align: center; color: var(--text-muted); padding: 40px 0; font-size: 13px; }
+
+.client-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.client-table th { background: var(--rich-black); color: rgba(255,255,255,0.9); padding: 9px 14px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.client-table th:first-child { border-radius: 8px 0 0 0; }
+.client-table th:last-child  { border-radius: 0 8px 0 0; }
+.client-table td { padding: 10px 14px; border-bottom: 1px solid var(--link-water); vertical-align: middle; }
+.client-table tbody tr:last-child td { border-bottom: none; }
+.client-table tbody tr:hover td { background: #F4F7FE; }
+.client-name   { font-weight: 700; font-size: 13px; color: var(--rich-black); }
+.client-domain { font-size: 10px; color: var(--text-muted); font-weight: 500; margin-top: 2px; }
+.client-tags   { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.tag-chip         { background: var(--link-water); color: var(--deep-blue); font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+.tag-chip.primary { background: var(--cornflower); color: #fff; }
+.count-big   { font-size: 22px; font-weight: 800; color: var(--cornflower); line-height: 1; }
+.count-label { font-size: 10px; color: var(--text-muted); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-brand">
+    <svg class="isotipo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100" height="100" rx="22" fill="#6A97EB"/>
+      <circle cx="35" cy="35" r="8" fill="#070C21"/>
+      <path d="M28 62 Q38 44 52 50 Q66 56 72 40" stroke="#070C21" stroke-width="7" stroke-linecap="round" fill="none"/>
+    </svg>
+    <div class="header-text">
+      <h1>Dashboard de Atendimentos Semanais</h1>
+      <div class="sub">Inspira Legal · Intercom + Google Sheets · Atualizado ao abrir</div>
+    </div>
+  </div>
+  <button class="btn-reload" onclick="loadDashboard()">↻ Recarregar</button>
+</header>
+
+<div class="week-nav">
+  <button onclick="changeWeek(-1)">← Anterior</button>
+  <span class="week-label" id="weekLabel">Carregando...</span>
+  <button onclick="changeWeek(1)" id="btnNext" disabled>Próxima →</button>
+</div>
+
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('overview')" id="tab-overview">📊 Visão Geral</button>
+  <button class="tab-btn" onclick="switchTab('clients')" id="tab-clients">👥 Clientes</button>
+</div>
+
+<div class="content">
+  <div class="tab-pane active" id="pane-overview">
+    <div class="loading"><div class="spinner"></div><span>Buscando atendimentos...</span></div>
+  </div>
+  <div class="tab-pane" id="pane-clients">
+    <div class="loading"><div class="spinner"></div><span>Aguardando dados...</span></div>
+  </div>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────
+const EXCLUDE_TAGS = [
+  'teste internos intercom','resposta automática','auto-reply',
+  'propagandas/email marketing','propaganda','spam','bot'
+];
+
+const GESTAO_TAGS = new Set([
+  'Gestão: Adição','Gestão: Transferência','Gestão: Exclusão','Gestão: Permissões',
+  'Gestão: Upgrade/Downgrade','Gestão: Login SSO','Gestão: Login email'
+]);
+
+const SKIP_DOMAINS = new Set([
+  'gmail.com','hotmail.com','outlook.com','yahoo.com','icloud.com','live.com',
+  'intercom.io','instagram.com','mail.instagram.com','accounts.google.com',
+  'survicate.com','inspira.legal'
+]);
+
+let weekOffset = 0;
+let chartInstance = null;
+let currentTab = 'overview';
+
+// ── Tab switching ─────────────────────────────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('pane-' + tab).classList.add('active');
+}
+
+// ── Week helpers ──────────────────────────────────────────────────────────
+function getWeekRange(offset) {
+  const now = new Date();
+  const day = now.getDay();
+  const daysToMon = day === 0 ? 6 : day - 1;
+  const thisMonday = new Date(now);
+  thisMonday.setDate(now.getDate() - daysToMon);
+  thisMonday.setHours(0, 0, 0, 0);
+  const start = new Date(thisMonday);
+  start.setDate(thisMonday.getDate() + offset * 7 - 7);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 7);
+  return { start, end };
+}
+
+function fmt(d) {
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function stripHtml(h) {
+  return (h || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function changeWeek(d) {
+  weekOffset += d;
+  document.getElementById('btnNext').disabled = weekOffset >= 0;
+  loadDashboard();
+}
+
+// ── Exclusion filter ──────────────────────────────────────────────────────
+function isExcluded(conv) {
+  const tags = conv.tags?.tags || [];
+  if (tags.some(t => EXCLUDE_TAGS.some(ex => (t.name || '').toLowerCase().includes(ex)))) return true;
+  if ((conv.source?.author?.type || '') === 'bot') return true;
+  return false;
+}
+
+// ── Tag taxonomy helpers ──────────────────────────────────────────────────
+function getTicketInfo(tagObjects) {
+  const names = tagObjects.map(t => (t.name || '').trim()).filter(Boolean);
+  const productTag = names.find(n => n.startsWith('Produto:') || n.startsWith('Produto '));
+  const natureTag  = names.find(n => n.startsWith('Natureza:'));
+  const gestaoTag  = names.find(n => GESTAO_TAGS.has(n));
+  const alunosTag  = names.find(n => n.includes('Alunos'));
+  const finTag     = names.find(n => n.startsWith('Financeiro') || n === 'Dúvida - Financeiro');
+  const churnTag   = names.find(n => n === 'Churn');
+  const sysTag     = names.find(n => n.startsWith('Sistema instável') || n.startsWith('Erro:'));
+  const dupTag     = names.find(n => n === 'Duplicidade de chat/email');
+  const desistTag  = names.find(n => n === 'Desistência do atendimento');
+
+  const cleanProd = t => t.replace(/^Produto:\s*/, '').trim();
+  const cleanNat  = t => t.replace(/^Natureza:\s*/, '').trim();
+
+  if (productTag && natureTag) {
+    const what = cleanProd(productTag), why = cleanNat(natureTag);
+    const aluno = alunosTag ? [{ type: 'aluno', label: '🎓 Alunos' }] : [];
+    return { key: `${alunosTag ? 'Alunos · ' : ''}${what} · ${why}`,
+             parts: [...aluno, { type: 'what', label: what }, { type: 'why', label: why }] };
+  }
+  if (productTag) {
+    const what = cleanProd(productTag);
+    const aluno = alunosTag ? [{ type: 'aluno', label: '🎓 Alunos' }] : [];
+    return { key: `${alunosTag ? 'Alunos · ' : ''}${what}`,
+             parts: [...aluno, { type: 'what', label: what }] };
+  }
+  if (gestaoTag)  return { key: gestaoTag, parts: [{ type: 'gestao', label: gestaoTag }] };
+  if (alunosTag && natureTag) {
+    return { key: `Alunos · ${cleanNat(natureTag)}`,
+             parts: [{ type: 'aluno', label: '🎓 Alunos' }, { type: 'why', label: cleanNat(natureTag) }] };
+  }
+  if (alunosTag)  return { key: 'Alunos (USP, PUC e Mackenzie)', parts: [{ type: 'aluno', label: '🎓 Alunos (USP, PUC e Mackenzie)' }] };
+  if (finTag)     return { key: `Financeiro · ${natureTag ? cleanNat(natureTag) : 'Dúvida'}`,
+                            parts: [{ type: 'what', label: 'Financeiro' }, { type: 'why', label: natureTag ? cleanNat(natureTag) : 'Dúvida' }] };
+  if (sysTag)     return { key: 'Sistema · Erro/Bug', parts: [{ type: 'what', label: 'Sistema' }, { type: 'why', label: 'Erro/Bug' }] };
+  if (churnTag)   return { key: 'Churn',       parts: [{ type: 'solo', label: 'Churn' }] };
+  if (dupTag)     return { key: 'Duplicidade', parts: [{ type: 'solo', label: 'Duplicidade de canal' }] };
+  if (desistTag)  return { key: 'Desistência', parts: [{ type: 'solo', label: 'Desistência' }] };
+  if (natureTag)  return { key: cleanNat(natureTag), parts: [{ type: 'why', label: cleanNat(natureTag) }] };
+  const fallback = names[0] || 'Sem classificação';
+  return { key: fallback, parts: [{ type: 'solo', label: fallback }] };
+}
+
+function ticketChipsHtml(parts) {
+  const cls = { aluno: 'chip-aluno', what: 'chip-what', why: 'chip-why', gestao: 'chip-gestao', solo: 'chip-solo' };
+  return parts.map(p => `<span class="${cls[p.type] || 'chip-solo'}">${p.label}</span>`).join(' ');
+}
+
+// ── Sheet parsing (raw values array from Sheets API) ──────────────────────
+function parseWeekTickets(rawCell) {
+  const tagFreqs = {};
+  const regex = /\d+\\?\.\s+(.+?)\s+\((\d+)x\)/g;
+  let m;
+  while ((m = regex.exec(rawCell)) !== null) {
+    let name = m[1].replace(/\s*[↑↓—–]\s*.*$/, '').replace(/\s*ð.*$/, '')
+                    .replace(/\s*\d+[ª]\s*sem.*$/, '').replace(/\s+topo\s*$/i, '').trim();
+    const freq = parseInt(m[2]);
+    if (name && freq > 0) tagFreqs[name] = freq;
+  }
+  return tagFreqs;
+}
+
+function parseSheetRows(values) {
+  const rows = [];
+  if (!values || values.length < 2) return rows;
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i];
+    if (!row || row.length < 2) continue;
+    const weekCell = (row[0] || '').trim();
+    if (!weekCell || !/\d{2}\/\d{2}/.test(weekCell)) continue;
+    const tagFreqs = parseWeekTickets(row[1] || '');
+    const totalMatch = (row[6] || '').match(/Base:\s*(\d+)/);
+    const total = totalMatch ? parseInt(totalMatch[1]) : 0;
+    if (Object.keys(tagFreqs).length > 0) rows.push({ week: weekCell, tags: tagFreqs, total });
+  }
+  return rows;
+}
+
+function findPrevSheetRow(sheetRows, displayedStart) {
+  const prevStart = new Date(displayedStart);
+  prevStart.setDate(prevStart.getDate() - 7);
+  function parseDate(str) {
+    const m = str.match(/(\d{2})\/(\d{2})/);
+    if (!m) return null;
+    return new Date(new Date().getFullYear(), parseInt(m[2]) - 1, parseInt(m[1]));
+  }
+  let best = null;
+  for (const row of sheetRows) {
+    const d = parseDate(row.week);
+    if (!d) continue;
+    const diff = Math.abs(d - prevStart);
+    if (diff < 7 * 86400000) {
+      if (!best || diff < Math.abs(parseDate(best.week) - prevStart)) best = row;
+    }
+  }
+  return best || (sheetRows.length ? sheetRows[sheetRows.length - 1] : null);
+}
+
+// ── Delta ─────────────────────────────────────────────────────────────────
+function trendHtml(ticketKey, deltaMap) {
+  const d = deltaMap[ticketKey];
+  if (!d) return '<span class="trend-same">—</span>';
+  if (d.isNew)    return '<span class="trend-new">🆕 Novo</span>';
+  if (d.delta > 0) return `<span class="trend-up">↑ +${d.delta}</span>`;
+  if (d.delta < 0) return `<span class="trend-down">↓ ${d.delta}</span>`;
+  return `<span class="trend-same">→ ${d.current}</span>`;
+}
+
+// ── Summary bar ───────────────────────────────────────────────────────────
+function buildSummaryBar(currentTotal, prevWeek, deltaMap) {
+  if (!prevWeek) return '';
+  const prevTotal = prevWeek.total || Object.values(prevWeek.tags).reduce((a,b)=>a+b,0) || 0;
+  const volDelta  = prevTotal > 0 ? currentTotal - prevTotal : null;
+  const up   = Object.values(deltaMap).filter(d => !d.isNew && d.delta > 0).length;
+  const down = Object.values(deltaMap).filter(d => !d.isNew && d.delta < 0).length;
+  const newC = Object.values(deltaMap).filter(d => d.isNew).length;
+  const volStr = volDelta !== null
+    ? `<span class="${volDelta > 0 ? 'vol-up' : volDelta < 0 ? 'vol-down' : 'vol-same'}">
+        ${volDelta > 0 ? '↑' : volDelta < 0 ? '↓' : '→'} ${volDelta > 0 ? '+' : ''}${volDelta !== 0 ? volDelta : 'igual ao'} atendimento${Math.abs(volDelta) !== 1 ? 's' : ''} vs semana anterior
+       </span>` : '';
+  return `<div class="summary-bar">
+    ${volStr ? `<span class="sb-label">Volume</span>${volStr}<span class="divider">·</span>` : ''}
+    <span class="sb-label">Tags</span>
+    ${up > 0   ? `<span class="trend-up">↑ ${up} aumentaram</span>` : ''}
+    ${down > 0 ? `<span class="trend-down">↓ ${down} caíram</span>` : ''}
+    ${newC > 0 ? `<span class="trend-new">🆕 ${newC} novos</span>` : ''}
+    <span class="prev-ref">Comparado a: ${prevWeek.week}</span>
+  </div>`;
+}
+
+// ── Auto insight (sem API Claude) ─────────────────────────────────────────
+function buildInsight(sortedTicketTypes, prevWeek, real) {
+  if (sortedTicketTypes.length === 0) return '';
+  const top1 = sortedTicketTypes[0];
+  const top2 = sortedTicketTypes[1];
+  const pct1 = real.length > 0 ? Math.round(top1[1] / real.length * 100) : 0;
+  let text = `O ticket mais recorrente da semana foi <strong>${top1[0]}</strong> com ${top1[1]} solicitações (${pct1}% do total).`;
+  if (top2) text += ` Em segundo lugar: <strong>${top2[0]}</strong> (${top2[1]}x).`;
+  if (prevWeek) {
+    const prevKeys = Object.keys(prevWeek.tags);
+    const newTickets = sortedTicketTypes.slice(0, 5).filter(([k]) =>
+      !prevKeys.some(p => k.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(k.toLowerCase()))
+    );
+    if (newTickets.length > 0) text += ` 🆕 Novo padrão esta semana: <strong>${newTickets[0][0]}</strong>.`;
+  }
+  return text;
+}
+
+// ── Client helpers ────────────────────────────────────────────────────────
+function getClientInfo(conv) {
+  const author = conv.source?.author || {};
+  const name   = (author.name || '').trim();
+  const email  = (author.email || '').toLowerCase().trim();
+  const domain = email.split('@')[1] || '';
+  if (SKIP_DOMAINS.has(domain) || domain.includes('intercom') || !domain) return null;
+  let displayName = name;
+  if (name.includes('|')) displayName = name.split('|').slice(1).join('|').trim();
+  if (!displayName || displayName.toLowerCase() === domain) {
+    const slug = domain.split('.')[0];
+    displayName = slug.charAt(0).toUpperCase() + slug.slice(1);
+  }
+  return { displayName, domain, email };
+}
+
+function buildClientData(conversations) {
+  const map = {};
+  for (const conv of conversations) {
+    const info = getClientInfo(conv);
+    if (!info) continue;
+    const { displayName, domain } = info;
+    if (!map[domain]) map[domain] = { displayName, domain, total: 0, tags: {} };
+    map[domain].total++;
+    const tags = conv.tags?.tags || [];
+    if (tags.length === 0) {
+      map[domain].tags['Sem tag'] = (map[domain].tags['Sem tag'] || 0) + 1;
+    } else {
+      for (const t of tags) {
+        const n = t.name || 'Sem tag';
+        map[domain].tags[n] = (map[domain].tags[n] || 0) + 1;
+      }
+    }
+  }
+  return Object.values(map).sort((a, b) => b.total - a.total).map(c => ({
+    ...c,
+    sortedTags: Object.entries(c.tags).sort((a,b) => b[1]-a[1])
+  }));
+}
+
+// ── Main load ─────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+  document.getElementById('pane-overview').innerHTML =
+    '<div class="loading"><div class="spinner"></div><span>Buscando atendimentos e histórico...</span></div>';
+  document.getElementById('pane-clients').innerHTML =
+    '<div class="loading"><div class="spinner"></div><span>Aguardando dados...</span></div>';
+  document.getElementById('btnNext').disabled = weekOffset >= 0;
+
+  const { start, end } = getWeekRange(weekOffset);
+  const endDisplay = new Date(end.getTime() - 86400000);
+  document.getElementById('weekLabel').textContent = `${fmt(start)} — ${fmt(endDisplay)}`;
+
+  const startTs = Math.floor(start.getTime() / 1000);
+  const endTs   = Math.floor(end.getTime() / 1000);
+
+  try {
+    // Parallel fetch: Intercom emails + chats + Google Sheets
+    const [emailRes, chatRes, sheetRes] = await Promise.all([
+      fetch('/api/intercom', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source_type: 'email', created_at_gte: startTs, per_page: 150 })
+      }).then(r => r.json()),
+      fetch('/api/intercom', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source_type: 'conversation', created_at_gte: startTs, per_page: 150 })
+      }).then(r => r.json()),
+      fetch('/api/sheets').then(r => r.json()).catch(() => ({ values: [] }))
+    ]);
+
+    const all = [
+      ...(emailRes.conversations || []).map(c => ({ ...c, _ch: 'Email' })),
+      ...(chatRes.conversations   || []).map(c => ({ ...c, _ch: 'Chat'  }))
+    ].filter(c => c.created_at >= startTs && c.created_at < endTs);
+
+    const real     = all.filter(c => !isExcluded(c));
+    const emails   = real.filter(c => c._ch === 'Email');
+    const chats    = real.filter(c => c._ch === 'Chat');
+    const excluded = all.length - real.length;
+
+    // Tag count (for raw chart)
+    const tagCount = {};
+    for (const c of real) {
+      for (const t of c.tags?.tags || []) {
+        if (!EXCLUDE_TAGS.some(ex => (t.name || '').toLowerCase().includes(ex))) {
+          tagCount[t.name] = (tagCount[t.name] || 0) + 1;
+        }
+      }
+    }
+
+    // Ticket types (combined)
+    const ticketTypeCount = {}, ticketTypeMap = {};
+    let semTagCount = 0;
+    for (const conv of real) {
+      const convTags = conv.tags?.tags || [];
+      if (convTags.length === 0) { semTagCount++; continue; }
+      const { key, parts } = getTicketInfo(convTags);
+      ticketTypeCount[key] = (ticketTypeCount[key] || 0) + 1;
+      ticketTypeMap[key]   = parts;
+    }
+    const sortedTicketTypes = Object.entries(ticketTypeCount).sort((a,b) => b[1]-a[1]);
+
+    // Sheet history
+    let prevWeek = null, deltaMap = {};
+    try {
+      const sheetRows = parseSheetRows(sheetRes.values || []);
+      prevWeek = findPrevSheetRow(sheetRows, start);
+      if (prevWeek) {
+        for (const [ticketKey, count] of sortedTicketTypes) {
+          const keyLow = ticketKey.toLowerCase();
+          let prevCount = 0, matched = false;
+          for (const [prevTag, prevFreq] of Object.entries(prevWeek.tags)) {
+            const prevLow = prevTag.toLowerCase();
+            const words   = prevLow.split(/[\s:·]+/).filter(w => w.length > 3);
+            if (keyLow.includes(prevLow) || prevLow.includes(keyLow) || words.some(w => keyLow.includes(w))) {
+              prevCount = prevFreq; matched = true; break;
+            }
+          }
+          deltaMap[ticketKey] = { current: count, prev: prevCount, delta: count - prevCount, isNew: !matched };
+        }
+      }
+    } catch (e) { console.warn('Sheet error:', e); }
+
+    if (real.length === 0) {
+      document.getElementById('pane-overview').innerHTML = '<div class="no-data">Nenhum atendimento encontrado para este período.</div>';
+      document.getElementById('pane-clients').innerHTML  = '<div class="no-data">Nenhum atendimento encontrado.</div>';
+      return;
+    }
+
+    const insight    = buildInsight(sortedTicketTypes, prevWeek, real);
+    const clientData = buildClientData(real);
+
+    render({ real, emails, chats, excluded, semTagCount, sortedTicketTypes, ticketTypeMap,
+             insight, prevWeek, deltaMap, clientData });
+
+  } catch (e) {
+    document.getElementById('pane-overview').innerHTML =
+      `<div class="error-box">⚠️ Erro ao carregar dados: ${e.message}<br><small>Verifique as variáveis de ambiente INTERCOM_TOKEN e GOOGLE_SHEETS_KEY.</small></div>`;
+  }
+}
+
+// ── Render clients ────────────────────────────────────────────────────────
+function renderClients(clientData) {
+  if (!clientData || clientData.length === 0) {
+    document.getElementById('pane-clients').innerHTML =
+      '<div class="no-data">Nenhum cliente identificado.<br><small style="color:#9BA8BC">Verifique se os contatos têm e-mail corporativo no Intercom.</small></div>';
+    return;
+  }
+  const rows = clientData.map((c, i) => {
+    const tagChips = c.sortedTags.map(([tag, n], ti) =>
+      `<span class="tag-chip${ti===0?' primary':''}">${tag} (${n}x)</span>`
+    ).join('');
+    return `<tr>
+      <td style="text-align:center;width:36px"><span class="rank-num ${i<3?'top3':''}">${i+1}</span></td>
+      <td><div class="client-name">${c.displayName}</div><div class="client-domain">${c.domain}</div></td>
+      <td><div class="client-tags">${tagChips}</div></td>
+      <td style="text-align:center"><div class="count-big">${c.total}</div><div class="count-label">solicitaç${c.total===1?'ão':'ões'}</div></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('pane-clients').innerHTML = `
+    <div class="panel" style="margin-top:0">
+      <h2>👥 Clientes que mais acionaram o suporte
+        <span class="panel-subtitle">${clientData.length} cliente${clientData.length!==1?'s':''} identificado${clientData.length!==1?'s':''}</span>
+      </h2>
+      <table class="client-table">
+        <thead><tr><th style="text-align:center">#</th><th>Cliente</th><th>Motivo(s)</th><th style="text-align:center">Total</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <p style="margin-top:12px;font-size:11px;color:#9BA8BC;font-weight:500">
+        * Apenas contatos com e-mail corporativo. Leads sem e-mail ou domínios pessoais são excluídos.
+      </p>
+    </div>`;
+}
+
+// ── Render overview ───────────────────────────────────────────────────────
+function render({ real, emails, chats, excluded, semTagCount, sortedTicketTypes, ticketTypeMap,
+                  insight, prevWeek, deltaMap, clientData }) {
+  const topTag = sortedTicketTypes[0] || ['—', 0];
+  const top5   = sortedTicketTypes.slice(0, 5);
+
+  const tRows = top5.map(([ticketKey, freq], i) => {
+    const parts = ticketTypeMap[ticketKey] || [{ type: 'solo', label: ticketKey }];
+    const chips = ticketChipsHtml(parts);
+    const trend = trendHtml(ticketKey, deltaMap);
+    return `<tr>
+      <td style="text-align:center"><span class="rank-num ${i<3?'top3':''}">${i+1}</span></td>
+      <td><div class="ticket-combo">${chips}</div></td>
+      <td><span class="freq-pill">${freq} solicitaç${freq===1?'ão':'ões'}</span></td>
+      <td style="text-align:center">${trend}</td>
+    </tr>`;
+  }).join('');
+
+  const summaryBar = buildSummaryBar(real.length, prevWeek, deltaMap);
+  const prevLabel  = prevWeek ? `Comparando com ${prevWeek.week}` : '';
+
+  document.getElementById('pane-overview').innerHTML = `
+    ${summaryBar}
+    <div class="cards">
+      <div class="card">
+        <div class="card-label">Total Atendimentos</div>
+        <div class="card-value">${real.length}</div>
+        <div class="card-sub">
+          ${excluded > 0 ? `${excluded} excluído(s) · ` : ''}
+          ${semTagCount > 0
+            ? `<span style="color:#D97706;font-weight:700">⚠ ${semTagCount} sem tag</span>`
+            : '<span style="color:#208A9D">✓ Todos tagueados</span>'}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label">Emails</div>
+        <div class="card-value accent">${emails.length}</div>
+        <div class="card-sub">${real.length ? Math.round(emails.length/real.length*100) : 0}% do total</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Chats</div>
+        <div class="card-value green">${chats.length}</div>
+        <div class="card-sub">${real.length ? Math.round(chats.length/real.length*100) : 0}% do total</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Ticket Mais Frequente</div>
+        <div class="card-value indigo" style="font-size:12px;line-height:1.4;margin-top:4px;font-weight:800">${topTag[0]}</div>
+        <div class="card-sub">${topTag[1]}× esta semana</div>
+      </div>
+    </div>
+
+    ${insight ? `<div class="insight-box">💡 <strong>Insight da semana:</strong> ${insight}</div>` : ''}
+
+    <div class="two-col">
+      <div class="panel">
+        <h2>🎯 Top 5 Tickets Recorrentes por Tag
+          ${prevLabel ? `<span class="panel-subtitle">${prevLabel}</span>` : ''}
+        </h2>
+        ${tRows ? `<table class="tickets-table">
+          <thead><tr>
+            <th style="text-align:center;width:36px">#</th>
+            <th>Ticket</th>
+            <th>Volume</th>
+            <th style="text-align:center">Tendência</th>
+          </tr></thead>
+          <tbody>${tRows}</tbody>
+        </table>` : '<div class="no-data">Nenhuma tag encontrada neste período</div>'}
+      </div>
+      <div class="panel">
+        <h2>🏷️ Distribuição de Tickets</h2>
+        <div class="chart-wrap"><canvas id="tagChart"></canvas></div>
+      </div>
+    </div>
+  `;
+
+  renderClients(clientData);
+
+  if (sortedTicketTypes.length > 0) {
+    const top = sortedTicketTypes.slice(0, 10);
+    const ctx = document.getElementById('tagChart').getContext('2d');
+    const palette = ['#6A97EB','#208A9D','#9970FF','#2C3BA1','#6A97EB','#208A9D','#9970FF','#2C3BA1','#6A97EB','#208A9D'];
+    chartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: top.map(t => t[0].length > 28 ? t[0].slice(0,28)+'…' : t[0]),
+        datasets: [{ data: top.map(t => t[1]), backgroundColor: palette.slice(0,top.length).map(c=>c+'CC'), borderRadius: 5, barThickness: 14 }]
+      },
+      options: {
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw} atendimentos` } } },
+        scales: {
+          x: { ticks: { font: { size: 10, family: "'Plus Jakarta Sans'" }, color: '#6B7A99' }, grid: { color: '#EEF2FC' }, beginAtZero: true },
+          y: { ticks: { font: { size: 10, family: "'Plus Jakarta Sans'" }, color: '#070C21' } }
+        }
+      }
+    });
+  }
+}
+
+loadDashboard();
+</script>
+</body>
+</html>

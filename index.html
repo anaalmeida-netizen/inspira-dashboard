@@ -1,0 +1,27 @@
+// api/sheets.js — Vercel Serverless Function
+// Reads the historical tracker spreadsheet via Google Sheets API v4
+
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
+  const apiKey  = process.env.GOOGLE_SHEETS_KEY;
+  const sheetId = process.env.SHEET_ID || '1-InKQueBbmdkCKZoQf54FcJA0tRV2DAYqYbt9WG02d4';
+
+  if (!apiKey) return res.status(500).json({ error: 'GOOGLE_SHEETS_KEY not set in environment variables' });
+
+  try {
+    // Fetch columns A–H of the first sheet (tracker)
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A:H?key=${encodeURIComponent(apiKey)}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.error) return res.status(400).json({ error: data.error.message });
+
+    res.json({ values: data.values || [] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
